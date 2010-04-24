@@ -9,21 +9,72 @@
 
   var $infestor = {
 
+    context: context,
+
     hive: 'http://mitesrv.nu-ex.com',
     //hive: 'http://localhost:3030',
 
-    context: context,
-
     mites: [],
 
-    mite: {
+    Mite: function(data){
+      var _self = this;
 
-      next_position: function(){
+      this.dom = null;
 
-      },
+      var pixel_to_int = function(str){
+        return parseInt(str.match(/[0-9]*/)[0]);
+      }
 
-      dom: null
+      this.next_duration = function(){
+        var max_duration = 5000;
+        var min_duration = 1000;
+        return Math.floor(min_duration + (Math.random() * min_duration));
+      }
 
+      this.next_position = function(){
+        var min_distance = 20;
+        var max_distance = 100;
+        var x = pixel_to_int(_self.dom.style.left);
+        var y = pixel_to_int(_self.dom.style.top);
+        var field_width = context.innerWidth;
+        var field_height = context.innerHeight;
+        var x_max = x + max_distance
+        var x_min = x - min_distance
+        var y_max = y + max_distance
+        var y_min = y - min_distance
+        var next_x = Math.floor(x_min + (Math.random() * (x_max - x_min)))
+        var next_y = Math.floor(y_min + (Math.random() * (y_max - y_min)))
+        if (next_x > field_width) next_x = (field_width - _self.dom.style.width);
+        if (next_x < 0) next_x = 0
+        if (next_y > field_height) next_y = (field_height - _self.dom.style.height);
+        if (next_y < 0) next_y = 0
+        return {x: next_x + 'px', y: next_y + 'px'}
+      }
+
+      this.spawn = function(){
+        var body_tag = document.getElementsByTagName('body')[0];
+        var mite_dom = document.createElement('div');
+        mite_dom.setAttribute('class', 'mite');
+        mite_dom.style.width = '10px';
+        mite_dom.style.height = '10px';
+        mite_dom.style.position = 'fixed';
+        mite_dom.style.top = $infestor.rand(context.innerHeight) + 'px';
+        mite_dom.style.left = $infestor.rand(context.innerWidth) + 'px';
+        var r = $infestor.rand(255);
+        var g = $infestor.rand(255);
+        var b = $infestor.rand(255);
+        mite_dom.style.backgroundColor = 'rgb('+r+','+g+','+b+')';
+        body_tag.appendChild(mite_dom);
+        _self.container = body_tag;
+        _self.dom = mite_dom;
+      }
+
+      this.move = function(){
+        var position = _self.next_position();
+        _self.dom.style.left = position.x;
+        _self.dom.style.top = position.y;
+        setTimeout(_self.move, _self.next_duration());
+      }
     },
 
     /*!
@@ -92,28 +143,23 @@
       });
     },
 
-    add_mite: function(){
-      var body_tag = document.getElementsByTagName('body')[0];
-      var mite = document.createElement('div');
-      mite.setAttribute('class', 'mite');
-      mite.style.backgroundColor = '#000';
-      mite.style.width = '10px';
-      mite.style.height = '10px';
-      mite.style.position = 'fixed';
-      mite.style.top = this.rand(this.context.innerHeight) + 'px';
-      mite.style.left = this.rand(this.context.innerWidth) + 'px';
-      body_tag.appendChild(mite);
+    add_mite: function(data){
+      mite = new this.Mite(data);
+      mite.spawn();
+      this.mites.push(mite);
     },
 
     bring_to_life: function(){
-      // TODO
+      for(i in this.mites){
+        this.mites[i].move();
+      }
     },
 
     spawn_mites: function(data){
-      for(i in data.mites) this.add_mite();
+      for(i in data.mites) this.add_mite(data.mites[i]);
       this.bring_to_life();
     }
-  };
+  }
 
   $infestor.log('Infestor Initialized');
   $infestor.log('Infestor Key: ' + $infestor.key());
@@ -121,4 +167,5 @@
   $infestor.log(' Current URI: ' + $infestor.uri);
 
   $infestor.infest();
+
 })();
